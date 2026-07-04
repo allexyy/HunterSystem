@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS xp_gold_transactions;
+DROP TABLE IF EXISTS quest_stat_rewards;
+DROP TABLE IF EXISTS quests;
+DROP TABLE IF EXISTS habit_stat_rewards;
+DROP TABLE IF EXISTS habits;
+DROP TABLE IF EXISTS user_stats;
+DROP TABLE IF EXISTS stats;
+DROP TABLE IF EXISTS users;
+DROP TYPE IF EXISTS quest_status;
+DROP TYPE IF EXISTS quest_type;

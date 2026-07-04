@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hunter_system_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-hunter}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hunter}
+      POSTGRES_DB: ${DB_NAME:-hunter_system}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - hunter_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-hunter} -d ${DB_NAME:-hunter_system}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Раскомментируешь, когда api/bot будут готовы к контейнеризации
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: hunter_system_api
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "8080:8080"
+  #   command: ["/app/api"]
+  #
+  # bot:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: hunter_system_bot
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   env_file:
+  #     - .env
+  #   command: ["/app/bot"]
+
+volumes:
+  hunter_pg_data:
