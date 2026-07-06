@@ -9,6 +9,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type TxManager struct {
+	pool *pgxpool.Pool
+}
+
+func NewTxManager(pool *pgxpool.Pool) *TxManager {
+	return &TxManager{pool: pool}
+}
+
 func New(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -37,14 +45,14 @@ func New(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func Transaction(ctx context.Context, pool *pgxpool.Pool, fn func(q *db.Queries) error) error {
-	tx, err := pool.Begin(ctx)
+func (m *TxManager) Transaction(ctx context.Context, fn func(q db.Querier) error) error {
+	tx, err := m.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	if err := fn(db.New(tx)); err != nil { // ← вот здесь
+	if err := fn(db.New(tx)); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)

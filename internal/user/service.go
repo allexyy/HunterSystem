@@ -9,11 +9,12 @@ import (
 )
 
 type Service struct {
-	q db.Querier
+	q  db.Querier
+	tx TxRunner
 }
 
-func NewService(q db.Querier) *Service {
-	return &Service{q: q}
+func NewService(q db.Querier, tx TxRunner) *Service {
+	return &Service{q: q, tx: tx}
 }
 
 func (s *Service) RegisterUser(ctx context.Context, telegramId int64, username string) (db.User, error) {
@@ -25,11 +26,22 @@ func (s *Service) RegisterUser(ctx context.Context, telegramId int64, username s
 }
 
 func (s *Service) createUser(ctx context.Context, telegramId int64, username string) (db.User, error) {
-	u, err := s.q.CreateUser(ctx, db.CreateUserParams{
-		telegramId,
-		pgtype.Text{username, true},
-		//TODO: Got timezone from user
-		"+3",
+	var created db.User
+	err := s.tx.Transaction(ctx, func(q db.Querier) error {
+		var err error
+		created, err = q.CreateUser(ctx, db.CreateUserParams{
+			telegramId,
+			pgtype.Text{username, true},
+			//TODO: Got timezone from user
+			"+3",
+		})
+		if err != nil {
+			return err
+		}
+		return q.InitUserStats(ctx, created.ID)
 	})
-	return u, err
+	if err != nil {
+		return db.User{}, err
+	}
+	return created, nil
 }
