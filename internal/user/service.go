@@ -25,6 +25,11 @@ func (s *Service) RegisterUser(ctx context.Context, telegramId int64, username s
 	return u, err
 }
 
+func (s *Service) GetUser(ctx context.Context, telegramId int64) (db.User, error) {
+	u, err := s.q.GetUserByTelegramID(ctx, telegramId)
+	return u, err
+}
+
 func (s *Service) createUser(ctx context.Context, telegramId int64, username string) (db.User, error) {
 	var created db.User
 	err := s.tx.Transaction(ctx, func(q db.Querier) error {

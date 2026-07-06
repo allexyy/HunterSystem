@@ -17,7 +17,7 @@ type mockQuerier struct {
 	initUserStatsFn func(ctx context.Context, userID int64) error
 }
 
-type mockTx struct{ q db.Querier } // ← интерфейс, влезает и мок, и настоящий
+type mockTx struct{ q db.Querier }
 
 func (m *mockTx) Transaction(ctx context.Context, fn func(q db.Querier) error) error {
 	return fn(m.q)

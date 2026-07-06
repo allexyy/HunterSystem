@@ -5,6 +5,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/yourname/hunter-system/internal/config"
 	"github.com/yourname/hunter-system/internal/db"
+	"github.com/yourname/hunter-system/internal/habit"
 	"github.com/yourname/hunter-system/internal/infrastructure/database"
 	"github.com/yourname/hunter-system/internal/transport/telegram"
 	"github.com/yourname/hunter-system/internal/user"
@@ -21,7 +22,8 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	queries := db.New(pool)
 	txManager := database.NewTxManager(pool)
 	userService := user.NewService(queries, txManager)
-	bot, err := telegram.New(cfg.TelegramBotToken, userService)
+	habitService := habit.NewService(queries, txManager)
+	bot, err := telegram.New(cfg.TelegramBotToken, userService, habitService)
 
 	return &App{cfg: cfg, pool: pool, bot: bot}, err
 }
