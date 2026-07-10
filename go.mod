@@ -4,6 +4,7 @@ go 1.25
 
 require (
 	github.com/gin-gonic/gin v1.10.0
+	github.com/go-telegram/bot v1.22.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/joho/godotenv v1.5.1
 )

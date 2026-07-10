@@ -3,10 +3,19 @@ package database
 import (
 	"context"
 	"fmt"
+	"github.com/yourname/hunter-system/internal/db"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type TxManager struct {
+	pool *pgxpool.Pool
+}
+
+func NewTxManager(pool *pgxpool.Pool) *TxManager {
+	return &TxManager{pool: pool}
+}
 
 func New(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
@@ -34,4 +43,17 @@ func New(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func (m *TxManager) Transaction(ctx context.Context, fn func(q db.Querier) error) error {
+	tx, err := m.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if err := fn(db.New(tx)); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
