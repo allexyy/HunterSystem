@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"github.com/yourname/hunter-system/internal/db"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -34,4 +35,17 @@ func New(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func Transaction(ctx context.Context, pool *pgxpool.Pool, fn func(q *db.Queries) error) error {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if err := fn(db.New(tx)); err != nil { // ← вот здесь
+		return err
+	}
+	return tx.Commit(ctx)
 }
