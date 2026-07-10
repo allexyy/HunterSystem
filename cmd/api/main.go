@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
-	"github.com/yourname/hunter-system/pkg/database"
+	"github.com/yourname/hunter-system/internal/infrastructure/database"
 )
 
 func main() {
