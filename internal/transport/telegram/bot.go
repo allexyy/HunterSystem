@@ -27,6 +27,9 @@ func New(token string, userService *user.Service, habitService *habit.Service) (
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/newhabit", bot.MatchTypePrefix, wrapper.handleAddHabit)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/habits", bot.MatchTypePrefix, wrapper.handleHabitsList)
 
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/today", bot.MatchTypePrefix, wrapper.handleHabitsList)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/newquest", bot.MatchTypePrefix, wrapper.handleHabitsList)
+
 	return wrapper, nil
 }
 

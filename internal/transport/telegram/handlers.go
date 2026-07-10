@@ -50,6 +50,9 @@ func (b *Bot) handleHabitsList(ctx context.Context, bot2 *bot.Bot, update *model
 }
 
 func (b *Bot) handleAddHabit(ctx context.Context, bot2 *bot.Bot, update *models.Update) {
+	if update.Message == nil {
+		return
+	}
 	tgID := update.Message.From.ID
 	user, err := b.userService.GetUser(ctx, tgID)
 	if err != nil {
