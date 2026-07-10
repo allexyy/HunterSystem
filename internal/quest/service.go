@@ -13,6 +13,10 @@ type Service struct {
 	tx TxRunner
 }
 
+func NewService(q db.Querier, tx TxRunner) *Service {
+	return &Service{q: q, tx: tx}
+}
+
 func (s *Service) GenerateDailyQuests(ctx context.Context, userId int64) ([]db.Quest, error) {
 	h, err := s.q.ListActiveHabits(ctx, userId)
 	if err != nil {
@@ -54,6 +58,24 @@ func (s *Service) CompleteQuest(ctx context.Context, userId int64) {
 	})
 	//TODO:IncrementStats
 	//TODO:UpdateUserLevel
+}
+
+func (s *Service) GetQuestList(ctx context.Context, userId int64) (quests []db.Quest, err error) {
+	q, err := s.q.ListDailyQuestsByDate(ctx, db.ListDailyQuestsByDateParams{
+		UserID:  userId,
+		DueDate: pgtype.Date{Time: time.Now(), Valid: true},
+	})
+	if len(q) == 0 {
+		fmt.Println(q)
+		fmt.Println("No quests found. Start generate")
+		q, err = s.GenerateDailyQuests(ctx, userId)
+		fmt.Println("New")
+		fmt.Println(q)
+	}
+	if err != nil {
+		fmt.Errorf("Quests not found: %v", err)
+	}
+	return q, err
 }
 
 func (s *Service) CreateQuest(ctx context.Context, userId int64, habitId int64, title, description string, xpReward, goldReward int32) (db.Quest, error) {

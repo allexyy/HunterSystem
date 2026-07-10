@@ -7,6 +7,7 @@ import (
 	"github.com/yourname/hunter-system/internal/db"
 	"github.com/yourname/hunter-system/internal/habit"
 	"github.com/yourname/hunter-system/internal/infrastructure/database"
+	"github.com/yourname/hunter-system/internal/quest"
 	"github.com/yourname/hunter-system/internal/transport/telegram"
 	"github.com/yourname/hunter-system/internal/user"
 )
@@ -23,7 +24,8 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	txManager := database.NewTxManager(pool)
 	userService := user.NewService(queries, txManager)
 	habitService := habit.NewService(queries, txManager)
-	bot, err := telegram.New(cfg.TelegramBotToken, userService, habitService)
+	questService := quest.NewService(queries, txManager)
+	bot, err := telegram.New(cfg.TelegramBotToken, userService, habitService, questService)
 
 	return &App{cfg: cfg, pool: pool, bot: bot}, err
 }
