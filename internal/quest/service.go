@@ -36,8 +36,8 @@ func (s *Service) GenerateDailyQuests(ctx context.Context, userId int64) ([]db.Q
 	return quests, err
 }
 
-func (s *Service) CompleteQuest(ctx context.Context, userId int64) {
-	q, err := s.q.GetQuestByID(ctx, userId)
+func (s *Service) CompleteQuest(ctx context.Context, questId int64) {
+	q, err := s.q.GetQuestByID(ctx, questId)
 	if err != nil {
 		fmt.Errorf("Quest not found: %v", err)
 	}
@@ -46,7 +46,7 @@ func (s *Service) CompleteQuest(ctx context.Context, userId int64) {
 		if err != nil {
 			fmt.Errorf("Cant complete quest: %v", err)
 		}
-		_, err = tx.UpdateUserXPGold(ctx, db.UpdateUserXPGoldParams{
+		u, err := tx.UpdateUserXPGold(ctx, db.UpdateUserXPGoldParams{
 			ID:   q.UserID,
 			Xp:   int64(q.XpReward),
 			Gold: int64(q.GoldReward),
@@ -54,10 +54,21 @@ func (s *Service) CompleteQuest(ctx context.Context, userId int64) {
 		if err != nil {
 			fmt.Errorf("Cant Update xp and gold: %v", err)
 		}
+		stats, err := tx.ListQuestStatRewards(ctx, q.ID)
+		if err != nil {
+			fmt.Errorf("Cant Get stats: %v", err)
+		}
+		for _, stat := range stats {
+			tx.UpsertUserStat(ctx, db.UpsertUserStatParams{
+				UserID:   u.ID,
+				StatCode: stat.StatCode,
+				Value:    stat.Amount,
+			})
+		}
 		return err
 	})
-	//TODO:IncrementStats
 	//TODO:UpdateUserLevel
+	//TODO:Streak
 }
 
 func (s *Service) GetQuestList(ctx context.Context, userId int64) (quests []db.Quest, err error) {

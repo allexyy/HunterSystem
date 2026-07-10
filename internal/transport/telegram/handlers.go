@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func (b *Bot) handleStart(ctx context.Context, bot2 *bot.Bot, update *models.Update) {
+func (b *Bot) handleStart(ctx context.Context, _ *bot.Bot, update *models.Update) {
 	tgID := update.Message.From.ID
 	username := update.Message.From.Username
 
@@ -91,30 +91,34 @@ func (b *Bot) handleQuestList(ctx context.Context, _ *bot.Bot, update *models.Up
 	}
 }
 
-func (b *Bot) handleDoneCallback(ctx context.Context, bot2 *bot.Bot, update *models.Update) {
+func (b *Bot) handleDoneCallback(ctx context.Context, _ *bot.Bot, update *models.Update) {
 	cb := update.CallbackQuery
 	if cb == nil {
 		return
 	}
 
-	_, _ = b.api.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
-		CallbackQueryID: cb.ID,
-	})
+	answer := func(text string) {
+		if _, err := b.api.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: cb.ID,
+			Text:            text,
+		}); err != nil {
+			log.Printf("answer callback: %v", err)
+		}
+	}
 
 	idStr := strings.TrimPrefix(cb.Data, "done:")
 	questID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		log.Printf("bad callback data %q: %v", cb.Data, err)
+		answer("Что-то пошло не так")
 		return
 	}
 
 	b.questService.CompleteQuest(ctx, questID)
-	b.api.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
-		Text: "Квест выполнен! +20 XP",
-	})
+	answer(fmt.Sprintf("⚔️ +%d XP, +%d 💰", 0, 0))
 }
 
-func (b *Bot) handleHabitsList(ctx context.Context, bot2 *bot.Bot, update *models.Update) {
+func (b *Bot) handleHabitsList(ctx context.Context, _ *bot.Bot, update *models.Update) {
 	tgID := update.Message.From.ID
 	user, err := b.userService.GetUser(ctx, tgID)
 	if err != nil {
@@ -130,7 +134,7 @@ func (b *Bot) handleHabitsList(ctx context.Context, bot2 *bot.Bot, update *model
 	habitList := "Habit list :\n"
 	for _, habit := range habits {
 		habitList += fmt.Sprintf(
-			"%d) %s\n%s",
+			"%d) %s\n%s\n",
 			habit.ID, habit.Title, habit.Description.String)
 	}
 
@@ -139,7 +143,7 @@ func (b *Bot) handleHabitsList(ctx context.Context, bot2 *bot.Bot, update *model
 		Text:   habitList})
 }
 
-func (b *Bot) handleAddHabit(ctx context.Context, bot2 *bot.Bot, update *models.Update) {
+func (b *Bot) handleAddHabit(ctx context.Context, _ *bot.Bot, update *models.Update) {
 	if update.Message == nil {
 		return
 	}

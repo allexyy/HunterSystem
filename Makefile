@@ -62,3 +62,7 @@ run-bot:
 
 tidy:
 	go mod tidy
+
+lint:
+	# Требуется локально установленный golangci-lint:
+	golangci-lint run
