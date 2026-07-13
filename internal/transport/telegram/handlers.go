@@ -166,6 +166,28 @@ func (b *Bot) handleAddHabit(ctx context.Context, _ *bot.Bot, update *models.Upd
 	})
 }
 
+func (b *Bot) handleStats(ctx context.Context, _ *bot.Bot, update *models.Update) {
+	u, err := b.userService.GetUserStats(ctx, update.Message.From.ID)
+	if err != nil {
+		fmt.Errorf("Error loading user: %v", err)
+	}
+	var starsRow string
+	for _, stat := range u.Stats {
+		starsRow += fmt.Sprintf(
+			"\n%s %d",
+			stat.Name, stat.Value)
+	}
+	b.api.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text: fmt.Sprintf(
+			"Welcome, %s.\n\n"+
+				"Level %d\n"+
+				"XP: %d\n"+
+				"Gold: %d\n"+
+				"Rank: %s\n"+
+				"Stats: %s", u.Name, u.Level, u.Xp, u.Gold, u.Rank, starsRow)})
+}
+
 func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.Message == nil {
 		return

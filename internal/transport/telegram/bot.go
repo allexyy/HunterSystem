@@ -26,6 +26,8 @@ func New(token string, userService *user.Service, habitService *habit.Service, q
 
 	wrapper := &Bot{api: b, userService: userService, habitService: habitService, questService: questService}
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, wrapper.handleStart)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/stats", bot.MatchTypeExact, wrapper.handleStats)
+
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/newhabit", bot.MatchTypePrefix, wrapper.handleAddHabit)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/habits", bot.MatchTypePrefix, wrapper.handleHabitsList)
 

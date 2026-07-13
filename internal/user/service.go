@@ -30,6 +30,24 @@ func (s *Service) GetUser(ctx context.Context, telegramId int64) (db.User, error
 	return u, err
 }
 
+func (s *Service) GetUserStats(ctx context.Context, telegramId int64) (User, error) {
+	u, err := s.q.GetUserByTelegramID(ctx, telegramId)
+	st, err := s.q.ListUserStats(ctx, u.ID)
+	var stats []UserStats
+	for _, stat := range st {
+		stats = append(stats, UserStats{stat.StatCode, stat.Value})
+	}
+	user := User{
+		Name:  u.Username.String,
+		Level: u.Level,
+		Stats: stats,
+		Xp:    u.Xp,
+		Gold:  u.Gold,
+		Rank:  u.Rank,
+	}
+	return user, err
+}
+
 func (s *Service) createUser(ctx context.Context, telegramId int64, username string) (db.User, error) {
 	var created db.User
 	err := s.tx.Transaction(ctx, func(q db.Querier) error {
