@@ -28,6 +28,8 @@ func (s *Scheduler) Run(ctx context.Context) {
 		case <-ticker.C:
 			s.tick(ctx)
 		case <-ctx.Done():
+			ticker.Stop()
+			return
 		}
 	}
 }
