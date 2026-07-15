@@ -71,21 +71,26 @@ func (s *Service) CompleteQuest(ctx context.Context, questId int64) {
 	//TODO:Streak
 }
 
-func (s *Service) GetQuestList(ctx context.Context, userId int64) (quests []db.Quest, err error) {
+func (s *Service) GetQuestListWithGeneration(ctx context.Context, userId int64) (quests []db.Quest, err error) {
 	q, err := s.q.ListDailyQuestsByDate(ctx, db.ListDailyQuestsByDateParams{
 		UserID:  userId,
 		DueDate: pgtype.Date{Time: time.Now(), Valid: true},
 	})
 	if len(q) == 0 {
-		fmt.Println(q)
 		fmt.Println("No quests found. Start generate")
 		q, err = s.GenerateDailyQuests(ctx, userId)
-		fmt.Println("New")
-		fmt.Println(q)
 	}
 	if err != nil {
 		fmt.Errorf("Quests not found: %v", err)
 	}
+	return q, err
+}
+
+func (s *Service) GetQuestList(ctx context.Context, userId int64) (quests []db.Quest, err error) {
+	q, err := s.q.ListDailyQuestsByDate(ctx, db.ListDailyQuestsByDateParams{
+		UserID:  userId,
+		DueDate: pgtype.Date{Time: time.Now(), Valid: true},
+	})
 	return q, err
 }
 
