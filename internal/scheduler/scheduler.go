@@ -41,11 +41,9 @@ func (s *Scheduler) tick(ctx context.Context) {
 
 	}
 	for _, u := range users {
-		go func() {
-			if u.LastResetDate.Day() < time.Now().Day() && u.LastResetDate.Month() <= time.Now().Month() {
-				s.resetUser(ctx, u)
-			}
-		}()
+		if needsReset(u) {
+			s.resetUser(ctx, u)
+		}
 	}
 }
 
@@ -53,4 +51,15 @@ func (s *Scheduler) resetUser(ctx context.Context, u db.User) {
 	s.questService.GenerateDailyQuests(ctx, u.ID)
 	s.userService.UpdateUserReset(ctx, u)
 	fmt.Printf("Generate quests for user %d", u.ID)
+}
+
+func needsReset(u db.User) bool {
+	today := localDate(time.Now())
+	userResedDay := localDate(u.LastResetDate)
+
+	return userResedDay.Before(today)
+}
+
+func localDate(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
