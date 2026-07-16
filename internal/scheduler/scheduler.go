@@ -19,7 +19,7 @@ func NewScheduler(userService *user.Service, questService *quest.Service) *Sched
 }
 
 func (s *Scheduler) Run(ctx context.Context) {
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(3600 * time.Second)
 
 	s.tick(ctx)
 

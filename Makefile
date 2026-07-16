@@ -66,3 +66,12 @@ tidy:
 lint:
 	# Требуется локально установленный golangci-lint:
 	golangci-lint run
+
+prod-up:
+	docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+prod-logs:
+	docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f
+
+prod-down:
+	docker compose -f docker-compose.prod.yml --env-file .env.prod down

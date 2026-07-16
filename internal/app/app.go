@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/yourname/hunter-system/internal/config"
 	"github.com/yourname/hunter-system/internal/db"
@@ -23,12 +24,21 @@ type App struct {
 
 func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	pool, err := database.New(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("connect database: %w", err)
+	}
+
 	queries := db.New(pool)
 	txManager := database.NewTxManager(pool)
 	userService := user.NewService(queries, txManager)
 	habitService := habit.NewService(queries, txManager)
 	questService := quest.NewService(queries, txManager)
+
 	bot, err := telegram.New(cfg.TelegramBotToken, userService, habitService, questService)
+	if err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("create telegram bot: %w", err)
+	}
 	sch := scheduler.NewScheduler(userService, questService)
 
 	return &App{cfg: cfg, pool: pool, bot: bot, scheduler: sch}, err
