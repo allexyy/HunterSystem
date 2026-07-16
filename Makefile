@@ -1,4 +1,4 @@
-include .env
+-include .env
 export
 
 # Требуется локально установленный golang-migrate:
