@@ -8,6 +8,15 @@ SELECT * FROM users
 WHERE telegram_id = $1
 LIMIT 1;
 
+-- name: ListUsers :many
+SELECT * FROM users;
+
+-- name: UpdateUserResetDate :one
+UPDATE users
+SET last_reset_date = $2
+WHERE id = $1
+RETURNING *;
+
 -- name: GetUserByID :one
 SELECT * FROM users
 WHERE id = $1

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/yourname/hunter-system/internal/db"
+	"time"
 )
 
 type Service struct {
@@ -15,6 +16,14 @@ type Service struct {
 
 func NewService(q db.Querier, tx TxRunner) *Service {
 	return &Service{q: q, tx: tx}
+}
+
+func (s *Service) ListUser(ctx context.Context) ([]db.User, error) {
+	return s.q.ListUsers(ctx)
+}
+
+func (s *Service) UpdateUserReset(ctx context.Context, user db.User) {
+	s.q.UpdateUserResetDate(ctx, db.UpdateUserResetDateParams{ID: user.ID, LastResetDate: time.Now()})
 }
 
 func (s *Service) RegisterUser(ctx context.Context, telegramId int64, username string) (db.User, error) {

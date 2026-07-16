@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -14,7 +15,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (telegram_id, username, timezone)
 VALUES ($1, $2, $3)
-RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at
+RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at, last_reset_date
 `
 
 type CreateUserParams struct {
@@ -37,12 +38,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Gold,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastResetDate,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at FROM users
+SELECT id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at, last_reset_date FROM users
 WHERE id = $1
 LIMIT 1
 `
@@ -61,12 +63,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.Gold,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastResetDate,
 	)
 	return i, err
 }
 
 const getUserByTelegramID = `-- name: GetUserByTelegramID :one
-SELECT id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at FROM users
+SELECT id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at, last_reset_date FROM users
 WHERE telegram_id = $1
 LIMIT 1
 `
@@ -85,15 +88,52 @@ func (q *Queries) GetUserByTelegramID(ctx context.Context, telegramID int64) (Us
 		&i.Gold,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastResetDate,
 	)
 	return i, err
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at, last_reset_date FROM users
+`
+
+func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.TelegramID,
+			&i.Username,
+			&i.Timezone,
+			&i.Rank,
+			&i.Level,
+			&i.Xp,
+			&i.Gold,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.LastResetDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateUserRank = `-- name: UpdateUserRank :one
 UPDATE users
 SET rank = $2, updated_at = now()
 WHERE id = $1
-RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at
+RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at, last_reset_date
 `
 
 type UpdateUserRankParams struct {
@@ -115,6 +155,38 @@ func (q *Queries) UpdateUserRank(ctx context.Context, arg UpdateUserRankParams) 
 		&i.Gold,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastResetDate,
+	)
+	return i, err
+}
+
+const updateUserResetDate = `-- name: UpdateUserResetDate :one
+UPDATE users
+SET last_reset_date = $2
+WHERE id = $1
+RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at, last_reset_date
+`
+
+type UpdateUserResetDateParams struct {
+	ID            int64     `json:"id"`
+	LastResetDate time.Time `json:"last_reset_date"`
+}
+
+func (q *Queries) UpdateUserResetDate(ctx context.Context, arg UpdateUserResetDateParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserResetDate, arg.ID, arg.LastResetDate)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.Timezone,
+		&i.Rank,
+		&i.Level,
+		&i.Xp,
+		&i.Gold,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LastResetDate,
 	)
 	return i, err
 }
@@ -123,7 +195,7 @@ const updateUserTimezone = `-- name: UpdateUserTimezone :one
 UPDATE users
 SET timezone = $2, updated_at = now()
 WHERE id = $1
-RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at
+RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at, last_reset_date
 `
 
 type UpdateUserTimezoneParams struct {
@@ -145,6 +217,7 @@ func (q *Queries) UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezone
 		&i.Gold,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastResetDate,
 	)
 	return i, err
 }
@@ -153,7 +226,7 @@ const updateUserXPGold = `-- name: UpdateUserXPGold :one
 UPDATE users
 SET xp = xp + $2, gold = gold + $3, updated_at = now()
 WHERE id = $1
-RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at
+RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at, last_reset_date
 `
 
 type UpdateUserXPGoldParams struct {
@@ -176,6 +249,7 @@ func (q *Queries) UpdateUserXPGold(ctx context.Context, arg UpdateUserXPGoldPara
 		&i.Gold,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastResetDate,
 	)
 	return i, err
 }
