@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/yourname/hunter-system/internal/db"
-	"github.com/yourname/hunter-system/internal/user"
 	"testing"
 )
 
@@ -44,7 +43,7 @@ func TestRegisterUser_ExistingUser(t *testing.T) {
 		},
 	}
 
-	svc := user.NewService(m, &mockTx{q: m})
+	svc := NewService(m, &mockTx{q: m})
 	got, err := svc.RegisterUser(context.Background(), 42, "alex")
 
 	if err != nil {
@@ -70,7 +69,7 @@ func TestRegisterUser_NewUser(t *testing.T) {
 			return nil
 		},
 	}
-	svc := user.NewService(m, &mockTx{q: m})
+	svc := NewService(m, &mockTx{q: m})
 	got, err := svc.RegisterUser(context.Background(), 42, "alex")
 	if err != nil {
 		t.Fatalf("RegisterUser() unexpected error: %v", err)
@@ -87,7 +86,7 @@ func TestRegisterUser_DBError(t *testing.T) {
 		},
 	}
 
-	svc := user.NewService(m, &mockTx{q: m})
+	svc := NewService(m, &mockTx{q: m})
 	_, err := svc.RegisterUser(context.Background(), 42, "alex")
 	if err == nil {
 		t.Fatalf("RegisterUser() expected error but got empty:")

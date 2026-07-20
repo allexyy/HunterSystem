@@ -36,6 +36,7 @@ type Querier interface {
 	ListUsers(ctx context.Context) ([]User, error)
 	UpdateHabit(ctx context.Context, arg UpdateHabitParams) (Habit, error)
 	UpdateHabitStreak(ctx context.Context, arg UpdateHabitStreakParams) (Habit, error)
+	UpdateUserLvl(ctx context.Context, arg UpdateUserLvlParams) (User, error)
 	UpdateUserRank(ctx context.Context, arg UpdateUserRankParams) (User, error)
 	UpdateUserResetDate(ctx context.Context, arg UpdateUserResetDateParams) (User, error)
 	UpdateUserTimezone(ctx context.Context, arg UpdateUserTimezoneParams) (User, error)

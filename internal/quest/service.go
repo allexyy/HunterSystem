@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/yourname/hunter-system/internal/db"
+	"github.com/yourname/hunter-system/internal/stats"
 	"time"
 )
 
@@ -51,23 +52,28 @@ func (s *Service) CompleteQuest(ctx context.Context, questId int64) {
 			Xp:   int64(q.XpReward),
 			Gold: int64(q.GoldReward),
 		})
+		lvl, xp := stats.LvlEncrease(int(u.Level), int(u.Xp))
+		tx.UpdateUserLvl(ctx, db.UpdateUserLvlParams{
+			ID:    u.ID,
+			Xp:    xp,
+			Level: lvl,
+		})
 		if err != nil {
 			fmt.Errorf("Cant Update xp and gold: %v", err)
 		}
-		stats, err := tx.ListQuestStatRewards(ctx, q.ID)
+		stat, err := tx.ListQuestStatRewards(ctx, q.ID)
 		if err != nil {
 			fmt.Errorf("Cant Get stats: %v", err)
 		}
-		for _, stat := range stats {
+		for _, s := range stat {
 			tx.UpsertUserStat(ctx, db.UpsertUserStatParams{
 				UserID:   u.ID,
-				StatCode: stat.StatCode,
-				Value:    stat.Amount,
+				StatCode: s.StatCode,
+				Value:    s.Amount,
 			})
 		}
 		return err
 	})
-	//TODO:UpdateUserLevel
 	//TODO:Streak
 }
 

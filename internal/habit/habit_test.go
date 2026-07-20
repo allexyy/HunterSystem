@@ -3,9 +3,6 @@ package habit
 import (
 	"context"
 	"github.com/yourname/hunter-system/internal/db"
-	"github.com/yourname/hunter-system/internal/habit"
-	"github.com/yourname/hunter-system/internal/reward"
-	"github.com/yourname/hunter-system/internal/stats"
 	"testing"
 )
 
@@ -45,8 +42,9 @@ func TestCreateHabit(t *testing.T) {
 		},
 	}
 
-	svc := habit.NewService(m, &mockTx{q: m})
-	_, err := svc.CreateHabit(context.Background(), 42, "Create", "Create Test", reward.DifficultEasy, []string{stats.EnduranceCode})
+	svc := NewService(m, &mockTx{q: m})
+	d := NewHabitData("Create |Create Test |Hard |Int ")
+	_, err := svc.CreateHabit(context.Background(), 42, d)
 
 	if err != nil {
 		t.Fatalf("CreateHabit() unexpected error: %v", err)
@@ -62,7 +60,7 @@ func TestGetHabit(t *testing.T) {
 			return []db.Habit{{Title: "Test"}}, nil
 		},
 	}
-	svc := habit.NewService(m, &mockTx{q: m})
+	svc := NewService(m, &mockTx{q: m})
 	h, err := svc.GetHabits(context.Background(), 42)
 
 	if err != nil {
