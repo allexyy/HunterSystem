@@ -28,6 +28,12 @@ SET xp = xp + $2, gold = gold + $3, updated_at = now()
 WHERE id = $1
 RETURNING *;
 
+-- name: UpdateUserLvl :one
+UPDATE users
+SET xp = $2, level = $3, updated_at = now()
+WHERE id = $1
+    RETURNING *;
+
 -- name: UpdateUserRank :one
 UPDATE users
 SET rank = $2, updated_at = now()

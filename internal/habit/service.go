@@ -20,24 +20,24 @@ func NewService(q db.Querier, tx TxRunner) *Service {
 	return &Service{q: q, tx: tx}
 }
 
-func (s *Service) CreateHabit(ctx context.Context, userId int64, title string, description string, difficult string, statCodes []string) (db.Habit, error) {
+func (s *Service) CreateHabit(ctx context.Context, userId int64, data HabitData) (db.Habit, error) {
 	var habit db.Habit
-	rewards := reward.GetRewardByDifficult(difficult)
+	rewards := reward.GetRewardByDifficult(data.Difficult)
 
 	err := s.tx.Transaction(ctx, func(q db.Querier) error {
 		var err error
 		habit, err = q.CreateHabit(ctx, db.CreateHabitParams{
 			UserID:      userId,
-			Title:       strings.TrimSpace(strings.TrimPrefix(title, "/newhabit")),
-			Description: pgtype.Text{String: strings.TrimSpace(description), Valid: true},
-			Difficulty:  strings.TrimSpace(difficult),
+			Title:       strings.TrimSpace(strings.TrimPrefix(data.Title, "/newhabit")),
+			Description: pgtype.Text{String: data.Description, Valid: true},
+			Difficulty:  data.Difficult,
 			XpReward:    rewards.XP,
 			GoldReward:  rewards.Gold,
 		})
 		if err != nil {
 			return fmt.Errorf("create habit: %w", err)
 		}
-		for _, stat := range statCodes {
+		for _, stat := range data.StatCodes {
 			if _, err := q.CreateHabitStatReward(ctx, db.CreateHabitStatRewardParams{
 				HabitID:  habit.ID,
 				StatCode: strings.ToUpper(strings.TrimSpace(stat)),

@@ -129,6 +129,38 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const updateUserLvl = `-- name: UpdateUserLvl :one
+UPDATE users
+SET xp = $2, level = $3, updated_at = now()
+WHERE id = $1
+    RETURNING id, telegram_id, username, timezone, rank, level, xp, gold, created_at, updated_at, last_reset_date
+`
+
+type UpdateUserLvlParams struct {
+	ID    int64 `json:"id"`
+	Xp    int64 `json:"xp"`
+	Level int32 `json:"level"`
+}
+
+func (q *Queries) UpdateUserLvl(ctx context.Context, arg UpdateUserLvlParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserLvl, arg.ID, arg.Xp, arg.Level)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
+		&i.Username,
+		&i.Timezone,
+		&i.Rank,
+		&i.Level,
+		&i.Xp,
+		&i.Gold,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LastResetDate,
+	)
+	return i, err
+}
+
 const updateUserRank = `-- name: UpdateUserRank :one
 UPDATE users
 SET rank = $2, updated_at = now()

@@ -6,6 +6,7 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/yourname/hunter-system/internal/db"
+	"github.com/yourname/hunter-system/internal/habit"
 	"log"
 	"strconv"
 	"strings"
@@ -154,9 +155,8 @@ func (b *Bot) handleAddHabit(ctx context.Context, _ *bot.Bot, update *models.Upd
 		return
 	}
 
-	habitText := strings.Split(update.Message.Text, "|")
-	//TODO: Add mapper and struct to income text
-	h, err := b.habitService.CreateHabit(ctx, user.ID, habitText[0], habitText[1], habitText[2], habitText[3:])
+	habitData := habit.NewHabitData(update.Message.Text)
+	h, err := b.habitService.CreateHabit(ctx, user.ID, habitData)
 	if err != nil {
 		fmt.Errorf("Error creating habit: %v", err)
 	}
