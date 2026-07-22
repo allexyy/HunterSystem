@@ -21,31 +21,31 @@ func NewService(q db.Querier, tx TxRunner) *Service {
 func (s *Service) GenerateDailyQuests(ctx context.Context, userId int64) ([]db.Quest, error) {
 	h, err := s.q.ListActiveHabits(ctx, userId)
 	if err != nil {
-		fmt.Errorf("Can't load active habits: %v", err)
+		return nil, fmt.Errorf("Can't load active habits: %v", err)
 	}
 	var quests []db.Quest
 	err = s.tx.Transaction(ctx, func(q db.Querier) error {
 		for _, h := range h {
 			q, err := s.CreateQuest(ctx, h.UserID, h.ID, h.Title, h.Description.String, h.XpReward, h.GoldReward)
 			if err != nil {
-				fmt.Errorf("Can't create active quest: %v", err)
+				err = fmt.Errorf("Can't create active quest: %v", err)
 			}
-			quests = append(quests, q)
+			quests = append(quests, *q)
 		}
 		return err
 	})
 	return quests, err
 }
 
-func (s *Service) CompleteQuest(ctx context.Context, questId int64) {
+func (s *Service) CompleteQuest(ctx context.Context, questId int64) error {
 	q, err := s.q.GetQuestByID(ctx, questId)
 	if err != nil {
-		fmt.Errorf("Quest not found: %v", err)
+		return fmt.Errorf("Quest not found: %v", err)
 	}
 	s.tx.Transaction(ctx, func(tx db.Querier) error {
 		_, err := tx.CompleteQuest(ctx, q.ID)
 		if err != nil {
-			fmt.Errorf("Cant complete quest: %v", err)
+			return fmt.Errorf("Cant complete quest: %v", err)
 		}
 		u, err := tx.UpdateUserXPGold(ctx, db.UpdateUserXPGoldParams{
 			ID:   q.UserID,
@@ -59,11 +59,11 @@ func (s *Service) CompleteQuest(ctx context.Context, questId int64) {
 			Level: lvl,
 		})
 		if err != nil {
-			fmt.Errorf("Cant Update xp and gold: %v", err)
+			return fmt.Errorf("Cant Update xp and gold: %v", err)
 		}
 		stat, err := tx.ListQuestStatRewards(ctx, q.ID)
 		if err != nil {
-			fmt.Errorf("Cant Get stats: %v", err)
+			return fmt.Errorf("Cant Get stats: %v", err)
 		}
 		for _, s := range stat {
 			tx.UpsertUserStat(ctx, db.UpsertUserStatParams{
@@ -74,7 +74,7 @@ func (s *Service) CompleteQuest(ctx context.Context, questId int64) {
 		}
 		return err
 	})
-	//TODO:Streak
+	return nil
 }
 
 func (s *Service) GetQuestListWithGeneration(ctx context.Context, userId int64) (quests []db.Quest, err error) {
@@ -87,7 +87,7 @@ func (s *Service) GetQuestListWithGeneration(ctx context.Context, userId int64) 
 		q, err = s.GenerateDailyQuests(ctx, userId)
 	}
 	if err != nil {
-		fmt.Errorf("Quests not found: %v", err)
+		return nil, fmt.Errorf("Quests not found: %v", err)
 	}
 	return q, err
 }
@@ -100,11 +100,11 @@ func (s *Service) GetQuestList(ctx context.Context, userId int64) (quests []db.Q
 	return q, err
 }
 
-func (s *Service) CreateQuest(ctx context.Context, userId int64, habitId int64, title, description string, xpReward, goldReward int32) (db.Quest, error) {
+func (s *Service) CreateQuest(ctx context.Context, userId int64, habitId int64, title, description string, xpReward, goldReward int32) (*db.Quest, error) {
 	tomorrow := time.Now().Add(86400)
 	q, err := s.q.CreateQuest(ctx, db.CreateQuestParams{
 		UserID:      userId,
-		HabitID:     pgtype.Int8{habitId, true},
+		HabitID:     pgtype.Int8{Int64: habitId, Valid: true},
 		Type:        db.QuestTypeDaily,
 		Title:       title,
 		Description: pgtype.Text{String: description, Valid: true},
@@ -114,7 +114,7 @@ func (s *Service) CreateQuest(ctx context.Context, userId int64, habitId int64, 
 		DeadlineAt:  pgtype.Timestamptz{Time: tomorrow, Valid: true},
 	})
 	if err != nil {
-		fmt.Errorf("Can't create quest: %v", err)
+		return nil, fmt.Errorf("Can't create quest: %v", err)
 	}
-	return q, err
+	return &q, err
 }

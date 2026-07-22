@@ -62,10 +62,10 @@ func (s *Service) createUser(ctx context.Context, telegramId int64, username str
 	err := s.tx.Transaction(ctx, func(q db.Querier) error {
 		var err error
 		created, err = q.CreateUser(ctx, db.CreateUserParams{
-			telegramId,
-			pgtype.Text{username, true},
+			TelegramID: telegramId,
+			Username:   pgtype.Text{String: username, Valid: true},
 			//TODO: Got timezone from user
-			"+3",
+			Timezone: "+3",
 		})
 		if err != nil {
 			return err

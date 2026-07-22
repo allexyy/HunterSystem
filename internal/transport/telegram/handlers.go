@@ -123,12 +123,12 @@ func (b *Bot) handleHabitsList(ctx context.Context, _ *bot.Bot, update *models.U
 	tgID := update.Message.From.ID
 	user, err := b.userService.GetUser(ctx, tgID)
 	if err != nil {
-		fmt.Errorf("User not found")
+		b.reply(ctx, update.Message.Chat.ID, "Охотник не найден")
 		return
 	}
 	habits, err := b.habitService.GetHabits(ctx, user.ID)
 	if err != nil {
-		fmt.Errorf("Habits not found")
+		b.reply(ctx, update.Message.Chat.ID, "Привычек нет")
 		return
 	}
 
@@ -151,14 +151,15 @@ func (b *Bot) handleAddHabit(ctx context.Context, _ *bot.Bot, update *models.Upd
 	tgID := update.Message.From.ID
 	user, err := b.userService.GetUser(ctx, tgID)
 	if err != nil {
-		fmt.Errorf("User not found")
+		b.reply(ctx, update.Message.Chat.ID, "Охотник не найден")
 		return
 	}
 
 	habitData := habit.NewHabitData(update.Message.Text)
 	h, err := b.habitService.CreateHabit(ctx, user.ID, habitData)
 	if err != nil {
-		fmt.Errorf("Error creating habit: %v", err)
+		b.reply(ctx, update.Message.Chat.ID, "Проблема с созданием привычки")
+		return
 	}
 	b.api.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
@@ -169,7 +170,8 @@ func (b *Bot) handleAddHabit(ctx context.Context, _ *bot.Bot, update *models.Upd
 func (b *Bot) handleStats(ctx context.Context, _ *bot.Bot, update *models.Update) {
 	u, err := b.userService.GetUserStats(ctx, update.Message.From.ID)
 	if err != nil {
-		fmt.Errorf("Error loading user: %v", err)
+		b.reply(ctx, update.Message.Chat.ID, "Охотник не найден")
+		return
 	}
 	var starsRow string
 	for _, stat := range u.Stats {
