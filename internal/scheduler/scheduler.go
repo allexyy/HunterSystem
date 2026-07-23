@@ -6,6 +6,7 @@ import (
 	"github.com/yourname/hunter-system/internal/db"
 	"github.com/yourname/hunter-system/internal/quest"
 	"github.com/yourname/hunter-system/internal/user"
+	"log"
 	"time"
 )
 
@@ -38,28 +39,40 @@ func (s *Scheduler) tick(ctx context.Context) {
 	fmt.Println("Tick")
 	users, err := s.userService.ListUser(ctx)
 	if err != nil {
-
+		fmt.Println("Failed to get users")
 	}
 	for _, u := range users {
-		if needsReset(u) {
+		if needsReset(u, time.Now()) {
 			s.resetUser(ctx, u)
 		}
 	}
 }
 
 func (s *Scheduler) resetUser(ctx context.Context, u db.User) {
-	s.questService.GenerateDailyQuests(ctx, u.ID)
+	err := s.questService.FinishNotCompleteTask(ctx, u.ID)
+	if err != nil {
+		log.Printf("Failed to finish task: %v", err)
+	}
+	_, err = s.questService.GenerateDailyQuests(ctx, u.ID)
+	if err != nil {
+		log.Printf("Failed to generate daily quests: %v", err)
+	}
 	s.userService.UpdateUserReset(ctx, u)
 	fmt.Printf("Generate quests for user %d", u.ID)
 }
 
-func needsReset(u db.User) bool {
-	today := localDate(time.Now())
-	userResedDay := localDate(u.LastResetDate)
+func needsReset(u db.User, now time.Time) bool {
+	loc, err := time.LoadLocation(u.Timezone)
+	if err != nil {
+		log.Printf("user %d: bad timezone %q, fallback UTC", u.ID, u.Timezone)
+		loc = time.UTC
+	}
+	today := localDate(now, loc)
 
-	return userResedDay.Before(today)
+	return u.LastResetDate.Before(today)
 }
 
-func localDate(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+func localDate(t time.Time, loc *time.Location) time.Time {
+	lt := t.In(loc)
+	return time.Date(lt.Year(), lt.Month(), lt.Day(), 0, 0, 0, 0, time.UTC)
 }

@@ -18,6 +18,35 @@ func NewService(q db.Querier, tx TxRunner) *Service {
 	return &Service{q: q, tx: tx}
 }
 
+func (s *Service) FinishNotCompleteTask(ctx context.Context, userId int64) error {
+	quests, err := s.q.ListDailyQuestsByDate(ctx, db.ListDailyQuestsByDateParams{
+		UserID: userId,
+		DueDate: pgtype.Date{
+			Time:  time.Now().AddDate(0, 0, -1),
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("list daily quests: %w", err)
+	}
+	for _, quest := range quests {
+		s.tx.Transaction(ctx, func(q db.Querier) error {
+			if quest.DeadlineAt.Time.Before(time.Now()) {
+				h, err := q.GetHabitByID(ctx, quest.HabitID.Int64)
+				if err != nil {
+					return fmt.Errorf("Cant Get Habit: %v", err)
+				}
+				updateStreak(q, ctx, quest, 0, h.LongestStreak)
+				if err != nil {
+					return fmt.Errorf("Cant Update streak: %v", err)
+				}
+			}
+			return err
+		})
+	}
+	return nil
+}
+
 func (s *Service) GenerateDailyQuests(ctx context.Context, userId int64) ([]db.Quest, error) {
 	h, err := s.q.ListActiveHabits(ctx, userId)
 	if err != nil {
@@ -72,6 +101,22 @@ func (s *Service) CompleteQuest(ctx context.Context, questId int64) error {
 				Value:    s.Amount,
 			})
 		}
+		h, err := tx.GetHabitByID(ctx, q.HabitID.Int64)
+		if err != nil {
+			return fmt.Errorf("Cant Get Habit: %v", err)
+		}
+
+		nowStreak := h.CurrentStreak + 1
+		var longestStreak int32
+		if nowStreak > h.LongestStreak {
+			longestStreak = nowStreak
+		} else {
+			longestStreak = h.LongestStreak
+		}
+		updateStreak(tx, ctx, q, nowStreak, longestStreak)
+		if err != nil {
+			return fmt.Errorf("Cant Update streak: %v", err)
+		}
 		return err
 	})
 	return nil
@@ -101,7 +146,7 @@ func (s *Service) GetQuestList(ctx context.Context, userId int64) (quests []db.Q
 }
 
 func (s *Service) CreateQuest(ctx context.Context, userId int64, habitId int64, title, description string, xpReward, goldReward int32) (*db.Quest, error) {
-	tomorrow := time.Now().Add(86400)
+	tomorrow := time.Now().AddDate(0, 0, 1)
 	q, err := s.q.CreateQuest(ctx, db.CreateQuestParams{
 		UserID:      userId,
 		HabitID:     pgtype.Int8{Int64: habitId, Valid: true},
