@@ -43,7 +43,7 @@ func (b *Bot) handleQuestList(ctx context.Context, _ *bot.Bot, update *models.Up
 		return
 	}
 
-	quests, err := b.questService.GetQuestList(ctx, user.ID)
+	quests, err := b.questService.GetQuestListWithGeneration(ctx, user.ID)
 	if err != nil {
 		log.Printf("handleQuestList: ensure quests user=%d: %v", user.ID, err)
 		b.reply(ctx, chatID, "Не удалось получить квесты, попробуй позже")
@@ -115,7 +115,11 @@ func (b *Bot) handleDoneCallback(ctx context.Context, _ *bot.Bot, update *models
 		return
 	}
 
-	b.questService.CompleteQuest(ctx, questID)
+	err = b.questService.CompleteQuest(ctx, questID)
+	if err != nil {
+		answer("Что-то пошло не так")
+		return
+	}
 	answer(fmt.Sprintf("⚔️ +%d XP, +%d 💰", 0, 0))
 }
 

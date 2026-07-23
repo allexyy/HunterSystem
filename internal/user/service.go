@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const timezone = "Europe/Moscow"
+
 type Service struct {
 	q  db.Querier
 	tx TxRunner
@@ -64,8 +66,7 @@ func (s *Service) createUser(ctx context.Context, telegramId int64, username str
 		created, err = q.CreateUser(ctx, db.CreateUserParams{
 			TelegramID: telegramId,
 			Username:   pgtype.Text{String: username, Valid: true},
-			//TODO: Got timezone from user
-			Timezone: "+3",
+			Timezone:   timezone,
 		})
 		if err != nil {
 			return err
